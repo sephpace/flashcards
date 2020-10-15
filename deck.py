@@ -16,41 +16,24 @@ class Deck:
         __cards (list of Card): The cards in the deck.
     """
 
-    def __init__(self, source):
+    def __init__(self, cards=None):
         """
         Constructor.
 
         Args:
-            source (str): The path to the deck source file.
+            cards (list of Card): The cards to add to the deck. Optional.
         """
         # Create cards from source file
         self.__cards = Queue()
 
-        read_line = False
-        with open(source) as note_file:
-            for line in note_file:
-                # Look for the marker to start reading the flash cards
-                if "%%%" in line:
-                    read_line = not read_line
-                    continue
+        # Add the cards to the deck
+        if cards is not None:
+            self.add_all(cards)
 
-                # Extract definitions, answers, and hints from the given line
-                # TODO: Clean this up.  I wrote this when I was a programming
-                # noob.  Either refactor or use YAML instead.
-                if read_line:
-                    split_line = line.split(":")
-                    split_line[0] = split_line[0].split(",")
-                    for i in range(len(split_line[0])):
-                        split_line[0][i] = split_line[0][i].lstrip()
-                        split_line[1].lstrip()
-                    if len(split_line) == 3:
-                        split_line[2].lstrip()
-                        self.__cards.put(Card(split_line[0], split_line[1], split_line[2]))
-                    elif len(split_line) == 2:
-                        self.__cards.put(Card(split_line[0], split_line[1]))
 
     def __len__(self):
         return self.__cards.qsize()
+
 
     def add(self, card):
         """
@@ -60,6 +43,18 @@ class Deck:
             card (Card): The card to add to the deck.
         """
         self.__cards.put(card)
+
+
+    def add_all(self, cards):
+        """
+        Adds all of the given cards to the bottom of the deck.
+
+        Args:
+            cards (list of Card): The cards to add to the deck.
+        """
+        for card in cards:
+            self.add(card)
+
 
     def draw(self):
         """
@@ -71,6 +66,41 @@ class Deck:
             (Card): The card from the top of the deck.
         """
         return self.__cards.get()
+
+
+    def load(self, path):
+        """
+        Loads a deck from the file at the given path.
+
+        Args:
+            path (str): The path to the file to load.
+        """
+        cards = []
+        read_line = False
+        with open(path) as note_file:
+            for line in note_file:
+                # Look for the marker to start reading the flash cards
+                if "%%%" in line:
+                    read_line = not read_line
+                    continue
+
+                # Extract definitions, answers, and hints from the given line
+                # TODO: Clean this up.  I wrote this when I was a programming noob.  Either refactor or use YAML instead.
+                if read_line:
+                    split_line = line.split(":")
+                    split_line[0] = split_line[0].split(",")
+                    for i in range(len(split_line[0])):
+                        split_line[0][i] = split_line[0][i].lstrip()
+                        split_line[1].lstrip()
+                    if len(split_line) == 3:
+                        split_line[2].lstrip()
+                        cards.append(Card(split_line[0], split_line[1], split_line[2]))
+                    elif len(split_line) == 2:
+                        cards.append(Card(split_line[0], split_line[1]))
+
+        # Add the cards to the deck and remove old ones
+        self.__init__(cards)
+
 
     def shuffle(self):
         """
@@ -84,6 +114,5 @@ class Deck:
         # Shuffle extracted cards
         random.shuffle(card_list)
 
-        # Reinsert cards into queue
-        for card in card_list:
-            self.__cards.put(card)
+        # Reinsert cards into the deck
+        self.__init__(card_list)
